@@ -158,6 +158,22 @@ public class BlendshapeControl : MonoBehaviour
         }
     }
 
+    public void Wave()
+    {
+        if(!waving)
+            StartCoroutine(WaveCo());
+    }
+    IEnumerator WaveCo()
+    {
+        waving = true;
+        while(waving)
+        {
+            yield return new WaitForSeconds(Random.Range(0.5f, 5f));
+
+            waving = false;
+        }
+    }
+
     void SetEyebrows()
     {
         switch (eyebrowState)

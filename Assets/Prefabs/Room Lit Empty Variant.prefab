@@ -11,6 +11,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Room Lit Empty Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 1206292410570199648, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4808664291654929568, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
       propertyPath: m_RootOrder
       value: 7

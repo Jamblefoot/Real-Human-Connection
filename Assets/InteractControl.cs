@@ -5,15 +5,19 @@ using UnityEngine.UI;
 
 public class InteractControl : MonoBehaviour
 {
+
     [SerializeField] LineRenderer lineRend;
 
     [SerializeField] LayerMask interactLayers;
     [SerializeField] Text terminalText;
 
     Interactive currentInteractive;
+
+    public Vector3 interactPoint = Vector3.zero;
     // Start is called before the first frame update
     void Start()
     {
+
         if(lineRend != null)
             lineRend.positionCount = 0;
     }
@@ -33,9 +37,11 @@ public class InteractControl : MonoBehaviour
                 {
                     Debug.Log("Hitting interactive trigger for " + hit.collider.gameObject.name);
                     lineEnd = hit.point;
+                    interactPoint = hit.point;
                     if(currentInteractive != interactive)
                     {
                         currentInteractive = interactive;
+                        interactive.interactor = this;
                         interactive.CallPressFunctions();
 
                         if(interactive.options.Length > 0)
@@ -51,6 +57,15 @@ public class InteractControl : MonoBehaviour
             else
             {
                 lineEnd = transform.position + ray.direction * 20f;
+                if(currentInteractive != null)
+                {
+                    currentInteractive.CallReleaseFunctions();
+                    currentInteractive.interactor = null;
+                    currentInteractive = null;
+                    
+                }
+
+                interactPoint = Vector3.zero;
             }
 
             if(lineRend != null)
@@ -67,7 +82,15 @@ public class InteractControl : MonoBehaviour
                 lineRend.positionCount = 0;
             }
 
-            currentInteractive = null;
+            if(currentInteractive != null)
+            {
+                currentInteractive.CallReleaseFunctions();
+                currentInteractive.interactor = null;
+                currentInteractive = null;
+            }
+
+            interactPoint = Vector3.zero;
+            
         }
     }
 }

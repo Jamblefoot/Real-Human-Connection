@@ -18,6 +18,8 @@ public class Interactive : MonoBehaviour
     public UnityEvent callOnPress;
     public UnityEvent callOnRelease;
 
+    public InteractControl interactor;
+
 
     // Start is called before the first frame update
     void Start()
@@ -39,5 +41,6 @@ public class Interactive : MonoBehaviour
     public void CallReleaseFunctions()
     {
         callOnRelease.Invoke();
+        interactor = null;
     }
 }

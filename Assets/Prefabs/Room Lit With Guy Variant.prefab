@@ -620,13 +620,25 @@ PrefabInstance:
       propertyPath: m_Name
       value: Room Lit With Guy Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 1206292410570199648, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1206292410570199649, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
+      propertyPath: m_RootOrder
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 3865153038967204781, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
+      propertyPath: m_RootOrder
+      value: 11
+      objectReference: {fileID: 0}
     - target: {fileID: 4318452753132481569, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
       propertyPath: m_RootOrder
       value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 4808664291654929568, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
       propertyPath: m_RootOrder
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4808664291654929569, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
       propertyPath: m_Enabled
@@ -675,6 +687,10 @@ PrefabInstance:
     - target: {fileID: 6373680191613570678, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7247078002110268111, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
+      propertyPath: m_RootOrder
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7351771688645990738, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
       propertyPath: m_RootOrder
