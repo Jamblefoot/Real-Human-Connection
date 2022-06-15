@@ -10,7 +10,9 @@ public class BlendParams
 
 public class BlendshapeControl : MonoBehaviour
 {
-    [SerializeField] bool isPlayer = false;
+    public bool isPlayer = false;
+    Camera cam;
+    Vector3 camPosInit = Vector3.zero;
 
     public bool random = false;
 
@@ -49,7 +51,11 @@ public class BlendshapeControl : MonoBehaviour
     public enum Eyebrow{ Preset, Left, Right, Up, Down}
     public Eyebrow eyebrowState = Eyebrow.Preset;
 
-    [SerializeField] Transform head;
+    public Transform head;
+
+    public float reachMult = 2;
+
+    public Transform target;
     // Start is called before the first frame update
     void Awake()
     {
@@ -76,6 +82,13 @@ public class BlendshapeControl : MonoBehaviour
         StartCoroutine(Blink(eyeOpenLeft, eyeCloseLeft));
         StartCoroutine(Blink(eyeOpenRight, eyeCloseRight));
         StartCoroutine(EyebrowShift());
+    }
+
+    void Start()
+    {
+        cam = GetComponentInChildren<Camera>();
+        if(cam != null)
+            camPosInit = cam.transform.localPosition;
     }
 
     IEnumerator Blink(int openIndex, int closeIndex)
@@ -193,15 +206,33 @@ public class BlendshapeControl : MonoBehaviour
 
     void OnAnimatorIK(int layerIndex)
     {
-        if(!isPlayer) return;
+        if(!isPlayer) 
+        {
+            if(target != null)
+            {
+                animator.SetLookAtPosition(target.position);
+                animator.SetLookAtWeight(1);
+            }
+
+            return;
+        }
 
         Vector2 mousePos = Input.mousePosition;
         mousePos.x -= Screen.width / 2;
         mousePos.x /= Screen.width;
         mousePos.y -= Screen.height / 2;
         mousePos.y /= Screen.height;
-        animator.SetLookAtPosition(head.position + head.TransformDirection(new Vector3(mousePos.x, mousePos.y, 1)));
+        Vector3 lookDir = head.TransformDirection(new Vector3(mousePos.x, mousePos.y, 1));
+        animator.SetLookAtPosition(head.position + lookDir);
         animator.SetLookAtWeight(1);
+
+        if(Input.GetButton("Fire1"))
+        {
+            animator.SetIKPosition(AvatarIKGoal.RightHand, cam.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, reachMult)));
+            animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 1);
+            animator.SetIKRotation(AvatarIKGoal.RightHand, head.rotation);//Quaternion.Slerp())
+            animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 1);
+        }
     }
 
     public void Randomize()
@@ -229,5 +260,15 @@ public class BlendshapeControl : MonoBehaviour
         {
             characterSetup[i] = rend.GetBlendShapeWeight(i);
         }
+
+        if(cam != null)
+        {
+            cam.transform.localPosition = camPosInit + Vector3.forward * (rend.GetBlendShapeWeight(rend.sharedMesh.GetBlendShapeIndex("HeadSize Max")) / 100) * 0.5f;
+            cam.transform.localPosition -= Vector3.forward * (rend.GetBlendShapeWeight(rend.sharedMesh.GetBlendShapeIndex("HeadSize Min")) / 100) * 0.5f;
+        }
+
+        animator.SetFloat("cycleOffset", Random.value);
+        animator.SetFloat("speed", Random.Range(0.5f, 1.5f));
+
     }
 }

@@ -10,6 +10,9 @@ public class RoomControl : MonoBehaviour
     [SerializeField] GameObject roomLitWithGuyPrefab;
 
     [SerializeField] MeshRenderer window;
+    float windowGloss = 1f;
+    AudioSource audioSource;
+    [SerializeField] AudioClip kachunk;
 
     public class RoomSetup
     {
@@ -27,6 +30,8 @@ public class RoomControl : MonoBehaviour
 
     int currentRoom = 0;
     int nextRoom = -1;
+
+    BlendshapeControl player;
     // Start is called before the first frame update
     void Start()
     {
@@ -59,7 +64,21 @@ public class RoomControl : MonoBehaviour
         rooms[5].tran.gameObject.SetActive(true);
         rooms[5].tran.localPosition = Vector3.zero;
         currentRoom = 5;
-        Move(Random.Range(1, 6), Random.value > 0.5f, Random.value > 0.5f ? 1 : -1);
+
+        foreach (BlendshapeControl bsc in FindObjectsOfType<BlendshapeControl>())
+        {
+            if (bsc.isPlayer)
+            {
+                player = bsc;
+                break;
+            }
+        }
+
+        audioSource = GetComponent<AudioSource>();
+
+        //Move(Random.Range(1, 6), Random.value > 0.5f, Random.value > 0.5f ? 1 : -1);
+
+        
     }
 
     // Update is called once per frame
@@ -79,6 +98,12 @@ public class RoomControl : MonoBehaviour
 
     }
 
+    public void MoveRandom()
+    {
+        if(!moving)
+            StartCoroutine(MoveCo(Random.Range(1, 6), Random.value > 0.5f, Random.value > 0.5f ? 1 : -1));
+    }
+
     public void Move(int amount, bool xAxis, int direction)
     {
         if(!moving)
@@ -88,11 +113,19 @@ public class RoomControl : MonoBehaviour
     IEnumerator MoveCo(int amount, bool xAxis, int direction)
     {
         moving = true;
-        window.material.SetFloat("_Glossiness", 1f);
+        
         int counter = amount;
 
         while(counter > 0)
         {
+            if(audioSource != null)
+            {
+                if(!audioSource.isPlaying)
+                {
+                    audioSource.Play();
+                }
+            }
+
             if(nextRoom < 0)
             {
                 if(counter == 1)
@@ -103,13 +136,16 @@ public class RoomControl : MonoBehaviour
                 }
                 //else if(counter == 2)
                 //    nextRoom = SelectRoom(1);
-                else nextRoom = SelectRoom();
+                else nextRoom = Random.value > 0.5f ? SelectRoom() : SelectRoomDescending();
 
                 if(nextRoom < 2)
                 {
                     BlendshapeControl bsc = rooms[nextRoom].tran.GetComponentInChildren<BlendshapeControl>();
                     if(bsc != null)
+                    {
                         bsc.Randomize();
+                        bsc.target = player.head;
+                    }
                 }
                 rooms[nextRoom].active = true;
                 rooms[nextRoom].tran.gameObject.SetActive(true);
@@ -145,12 +181,46 @@ public class RoomControl : MonoBehaviour
                 counter--;
             }
 
+            if(nextRoom >= 0)
+            {
+                //float windowGloss = 1f;
+                float roomDist = Mathf.Min(1f - Mathf.Abs(rooms[nextRoom].tran.localPosition.x) / roomWidth, 1f - Mathf.Abs(rooms[nextRoom].tran.localPosition.y) / roomHeight);
+                float currentRoomDist = Mathf.Min(1f - Mathf.Abs(rooms[currentRoom].tran.localPosition.x) / roomWidth, 1f - Mathf.Abs(rooms[currentRoom].tran.localPosition.y) / roomHeight);
+                //Debug.Log("Should be setting window gloss! Room distance is " + roomDist.ToString());
+                if(rooms[nextRoom].lit)
+                {
+                    windowGloss = Mathf.Lerp(!rooms[currentRoom].lit ? 1f : 0.8f, 0.8f, roomDist / currentRoomDist);
+                    //Debug.Log("Window Gloss should be dimming!");
+                }
+                else
+                {
+                    windowGloss = Mathf.Lerp(!rooms[currentRoom].lit ? 1f : 0.8f, 1f, roomDist / currentRoomDist);
+                    //Debug.Log("Window should be getting glossier!");
+                }
+            
+                window.material.SetFloat("_Glossiness", windowGloss);
+
+                if(counter == 1)
+                {
+                    if(roomDist > 0.5f && audioSource != null)
+                    {
+                        audioSource.Stop();
+                        audioSource.PlayOneShot(kachunk);
+                    }
+                }
+            }
+
 
             yield return new WaitForFixedUpdate();
         }
 
-        window.material.SetFloat("_Glossiness", 0.8f);
+        //window.material.SetFloat("_Glossiness", 0.8f);
         //NEED CLUNK SOUND
+        /*if(audioSource != null)
+        {
+            audioSource.Stop();
+            audioSource.PlayOneShot(kachunk);
+        }*/
         moving = false;
     }
 
