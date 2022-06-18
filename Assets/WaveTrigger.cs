@@ -34,7 +34,7 @@ public class WaveTrigger : MonoBehaviour
         if(!tracking && guy != null)
         {
             StartCoroutine(TrackCo());
-            Debug.Log("Should Be Tracking Wave");
+            //Debug.Log("Should Be Tracking Wave");
         }
     }
 

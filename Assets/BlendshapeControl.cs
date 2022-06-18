@@ -17,6 +17,7 @@ public class BlendshapeControl : MonoBehaviour
     public bool random = false;
 
     float[] characterSetup;
+    float[] desiredSetup;
 
     [SerializeField] int smileLeft;
     [SerializeField] int frownLeft;
@@ -46,16 +47,24 @@ public class BlendshapeControl : MonoBehaviour
     public float talkMult = 2f;
 
     public bool waving = false;
-    public bool smiling = false;
-    public bool frowning = false;
+    bool smiling = false;
+    bool frowning = false;
     public enum Eyebrow{ Preset, Left, Right, Up, Down}
     public Eyebrow eyebrowState = Eyebrow.Preset;
+
+    int turnState = 0;
 
     public Transform head;
 
     public float reachMult = 2;
 
     public Transform target;
+    Transform reachTarget;
+    Transform mainTarget;
+
+    InteractControl interactControl;
+
+    Interactive[] interactives;
     // Start is called before the first frame update
     void Awake()
     {
@@ -89,6 +98,17 @@ public class BlendshapeControl : MonoBehaviour
         cam = GetComponentInChildren<Camera>();
         if(cam != null)
             camPosInit = cam.transform.localPosition;
+
+        interactControl = GetComponentInChildren<InteractControl>();
+
+        interactives = GetComponentsInChildren<Interactive>();
+        if(isPlayer)
+        {
+            foreach(Interactive inter in interactives)
+            {
+                inter.GetComponent<Collider>().enabled = false;
+            }
+        }
     }
 
     IEnumerator Blink(int openIndex, int closeIndex)
@@ -174,6 +194,21 @@ public class BlendshapeControl : MonoBehaviour
         }
     }
 
+    public void Turn(int direction)
+    {
+        if(animator.GetBool("turning")) return;
+
+        animator.SetBool("turning", true);
+        animator.SetFloat("turnDirection", direction);
+        turnState++;
+        turnState %= 4;
+        //Invoke("ToggleOffTurning", 0.5f);
+    }
+    public void ToggleOffTurning()
+    {
+        animator.SetBool("turning", false);
+    }
+
     void SetEyebrows()
     {
         switch (eyebrowState)
@@ -224,10 +259,22 @@ public class BlendshapeControl : MonoBehaviour
     {
         if(!isPlayer) 
         {
-            if(target != null)
+            if(target != null && turnState == 0)
             {
                 animator.SetLookAtPosition(target.position);
                 animator.SetLookAtWeight(1);
+            }
+
+            if(reachTarget != null)
+            {
+                animator.SetIKPosition(AvatarIKGoal.RightHand, reachTarget.position);
+                animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 1);
+
+                //float angleX = point ? 0 : -90;
+                //float angleZ = point ? -90 : 0;
+                Quaternion rot = head.rotation * Quaternion.Euler(-90, 0, 0);
+                animator.SetIKRotation(AvatarIKGoal.RightHand, rot);//Quaternion.Slerp())
+                animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 1);
             }
 
             return;
@@ -244,9 +291,23 @@ public class BlendshapeControl : MonoBehaviour
 
         if(Input.GetButton("Fire1"))
         {
-            animator.SetIKPosition(AvatarIKGoal.RightHand, cam.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, reachMult)));
+            Vector3 pos = head.position + head.forward;
+            bool point = false;
+            if(interactControl != null)
+            {
+                pos = interactControl.interactPoint;
+                if(interactControl.currentInteractive != null)
+                    point = interactControl.currentInteractive.pointAtMe;
+            }
+            else pos = cam.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, reachMult));
+            //float angleX = Input.mousePosition.y > Screen.height / 3 ? -90 : 0;
+            //float angleZ = Input.mousePosition.y < Screen.height / 3 ? -90 : 0;
+            float angleX = point ? 0 : -90;
+            float angleZ = point ? -90 : 0;
+            Quaternion rot = head.rotation * Quaternion.Euler(angleX, 0, angleZ);
+            animator.SetIKPosition(AvatarIKGoal.RightHand, pos);
             animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 1);
-            animator.SetIKRotation(AvatarIKGoal.RightHand, head.rotation);//Quaternion.Slerp())
+            animator.SetIKRotation(AvatarIKGoal.RightHand, rot);//Quaternion.Slerp())
             animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 1);
         }
     }
@@ -255,10 +316,18 @@ public class BlendshapeControl : MonoBehaviour
     {
         if(rend == null)
             rend = GetComponentInChildren<SkinnedMeshRenderer>();
-        
+
+        characterSetup = new float[rend.sharedMesh.blendShapeCount];
+        desiredSetup = new float[rend.sharedMesh.blendShapeCount];
+
+        float rand = 0f;
         for (int i = 0; i < rend.sharedMesh.blendShapeCount; i++)
         {
-            rend.SetBlendShapeWeight(i, Random.value * 100f);
+            rand = Random.value * 100;
+            rend.SetBlendShapeWeight(i, rand);
+            characterSetup[i] = rand;
+            if(isPlayer) desiredSetup[i] = 0;
+            else desiredSetup[i] = Random.value * 100;
         }
 
         if(Application.IsPlaying(gameObject))
@@ -271,11 +340,11 @@ public class BlendshapeControl : MonoBehaviour
             materials[0].color = skinColor;
         }
 
-        characterSetup = new float[rend.sharedMesh.blendShapeCount];
+        /*characterSetup = new float[rend.sharedMesh.blendShapeCount];
         for(int i = 0; i < characterSetup.Length; i++)
         {
             characterSetup[i] = rend.GetBlendShapeWeight(i);
-        }
+        }*/
 
         if(cam != null)
         {
@@ -286,5 +355,107 @@ public class BlendshapeControl : MonoBehaviour
         animator.SetFloat("cycleOffset", Random.value);
         animator.SetFloat("speed", Random.Range(0.5f, 1.5f));
 
+    }
+
+    public void ReachForTransform(Transform tran)
+    {
+        reachTarget = tran;
+    }
+
+    void OnEnable()
+    {
+        reachTarget = null;
+        waving = false;
+    }
+
+    public void Smile()
+    {
+        if(!smiling)
+            StartCoroutine(SmileCo());
+    }
+
+    IEnumerator SmileCo()
+    {
+        smiling = true;
+        rend.SetBlendShapeWeight(smileLeft, 100);
+        rend.SetBlendShapeWeight(frownLeft, 0);
+        rend.SetBlendShapeWeight(smileRight, 100);
+        rend.SetBlendShapeWeight(frownRight, 0);
+        yield return new WaitForSeconds(Random.Range(1f, 3f));
+
+        rend.SetBlendShapeWeight(smileLeft, characterSetup[smileLeft]);
+        rend.SetBlendShapeWeight(frownLeft, characterSetup[frownLeft]);
+        rend.SetBlendShapeWeight(smileRight, characterSetup[smileRight]);
+        rend.SetBlendShapeWeight(frownRight, characterSetup[frownRight]);
+
+        smiling = false;
+    }
+
+    public void Frown()
+    {
+        if(!frowning)
+            StartCoroutine(FrownCo());
+    }
+    IEnumerator FrownCo()
+    {
+        frowning = true;
+
+        rend.SetBlendShapeWeight(smileLeft, 0);
+        rend.SetBlendShapeWeight(frownLeft, 100);
+        rend.SetBlendShapeWeight(smileRight, 0);
+        rend.SetBlendShapeWeight(frownRight, 100);
+
+        yield return new WaitForSeconds(Random.Range(1f, 3f));
+
+        rend.SetBlendShapeWeight(smileLeft, characterSetup[smileLeft]);
+        rend.SetBlendShapeWeight(frownLeft, characterSetup[frownLeft]);
+        rend.SetBlendShapeWeight(smileRight, characterSetup[smileRight]);
+        rend.SetBlendShapeWeight(frownRight, characterSetup[frownRight]);
+
+        frowning = false;
+    }
+
+    public float[] GetSetup()
+    {
+        return characterSetup;
+    }
+    public float CheckCompatibility(float[] suitorWeights)
+    {
+        if(suitorWeights.Length > desiredSetup.Length)
+        {
+            Debug.LogError("Suitor has too many features to compare, apparently");
+            return 0f;
+        }
+
+        float delta = 0f;
+        for(int i = 0; i < suitorWeights.Length; i++)
+        {
+            delta += Mathf.Abs(desiredSetup[i] - suitorWeights[i]) / suitorWeights.Length;
+        }
+        return delta / 100;
+    }
+
+    public float GetBlendShapeWeight(int index)
+    {
+        return characterSetup[index];
+    }
+    public float GetBlendShapeWeight(string shapeName)
+    {
+        return GetBlendShapeWeight(GetBlendShapeIndex(shapeName));
+    }
+
+    public int GetBlendShapeIndex(string shapeName)
+    {
+        return rend.sharedMesh.GetBlendShapeIndex(shapeName);
+    }
+
+    public void AdjustDesired(int index, float value, int direction)
+    {
+        float thisValue = desiredSetup[index];
+
+        if(thisValue <= Mathf.Epsilon && direction >= 0)
+        {
+            desiredSetup[index] = value;
+        }
     }
 }

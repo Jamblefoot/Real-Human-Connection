@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class RoomControl : MonoBehaviour
 {
@@ -13,18 +14,23 @@ public class RoomControl : MonoBehaviour
     float windowGloss = 1f;
     AudioSource audioSource;
     [SerializeField] AudioClip kachunk;
+    [SerializeField] Terminal playerTerminal;
 
     public class RoomSetup
     {
         public Transform tran;
         public bool lit;
         public bool active;
+        public GameObject scene;
+        public Terminal terminal;
     }
     RoomSetup[] rooms;
+    [SerializeField] GameObject[] roomScenes;
+    [SerializeField] GameObject roomSceneStart;
 
     bool moving;
 
-    float roomWidth = 10f;
+    float roomWidth = 11f;
     float roomHeight = 7.5f;
     float moveSpeed = 5f;
 
@@ -32,6 +38,10 @@ public class RoomControl : MonoBehaviour
     int nextRoom = -1;
 
     BlendshapeControl player;
+
+    float compatibility;
+
+    public UnityEvent callOnRoomChange;
     // Start is called before the first frame update
     void Start()
     {
@@ -57,12 +67,14 @@ public class RoomControl : MonoBehaviour
             }
             rooms[i].tran = room.transform;
             rooms[i].active = false;
+            rooms[i].terminal = room.transform.GetComponentInChildren<Terminal>();
             rooms[i].tran.gameObject.SetActive(false);
         }
 
         rooms[5].active = true;
         rooms[5].tran.gameObject.SetActive(true);
         rooms[5].tran.localPosition = Vector3.zero;
+        rooms[5].scene = SetupRoomScene(roomSceneStart, rooms[5].tran);
         currentRoom = 5;
 
         foreach (BlendshapeControl bsc in FindObjectsOfType<BlendshapeControl>())
@@ -81,7 +93,7 @@ public class RoomControl : MonoBehaviour
         
     }
 
-    // Update is called once per frame
+    /*// Update is called once per frame
     void Update()
     {
         float vertical = Input.GetAxis("Vertical");
@@ -96,7 +108,7 @@ public class RoomControl : MonoBehaviour
                 Move(Random.Range(1, 6), true, Mathf.RoundToInt(Mathf.Sign(horizontal)));
         }
 
-    }
+    }*/
 
     public void MoveRandom()
     {
@@ -138,6 +150,9 @@ public class RoomControl : MonoBehaviour
                 //    nextRoom = SelectRoom(1);
                 else nextRoom = Random.value > 0.5f ? SelectRoom() : SelectRoomDescending();
 
+                rooms[nextRoom].active = true;
+                rooms[nextRoom].tran.gameObject.SetActive(true);
+
                 if(nextRoom < 2)
                 {
                     BlendshapeControl bsc = rooms[nextRoom].tran.GetComponentInChildren<BlendshapeControl>();
@@ -147,8 +162,9 @@ public class RoomControl : MonoBehaviour
                         bsc.target = player.head;
                     }
                 }
-                rooms[nextRoom].active = true;
-                rooms[nextRoom].tran.gameObject.SetActive(true);
+
+                //rooms[nextRoom].active = true;
+                //rooms[nextRoom].tran.gameObject.SetActive(true);
                 Vector3 pos = rooms[currentRoom].tran.position;
                 if(xAxis)
                     pos -= direction * transform.right * roomWidth;
@@ -156,6 +172,14 @@ public class RoomControl : MonoBehaviour
                 
 
                 rooms[nextRoom].tran.position = pos;
+
+                if(nextRoom >= 2)
+                {
+                    if (Random.value > 0.8f)
+                    {
+                        rooms[nextRoom].scene = SetupRoomScene(roomScenes[Random.Range(0, roomScenes.Length)], rooms[nextRoom].tran);
+                    }
+                }
             }
 
             Vector3 move = Vector3.zero;
@@ -176,9 +200,14 @@ public class RoomControl : MonoBehaviour
                 rooms[currentRoom].tran.position += Vector3.right * 50;
                 rooms[currentRoom].active = false;
                 rooms[currentRoom].tran.gameObject.SetActive(false);
+                if(rooms[currentRoom].scene != null)
+                    DestroyImmediate(rooms[currentRoom].scene);
+                rooms[currentRoom].scene = null;
                 currentRoom = nextRoom;
                 nextRoom = -1;
                 counter--;
+
+                callOnRoomChange.Invoke();
             }
 
             if(nextRoom >= 0)
@@ -222,6 +251,21 @@ public class RoomControl : MonoBehaviour
             audioSource.PlayOneShot(kachunk);
         }*/
         moving = false;
+
+        UpdateTerminal();
+    }
+
+    GameObject SetupRoomScene(GameObject scene, Transform parentRoom)
+    {
+        GameObject go = Instantiate(scene, Vector3.zero, Quaternion.identity, parentRoom);
+        go.transform.localPosition = Vector3.zero;
+        go.transform.localRotation = Quaternion.identity;
+        return go;
+    }
+
+    public void UpdateTerminal()
+    {
+        compatibility = playerTerminal.ComputeCompatibility(rooms[currentRoom].terminal.character.GetSetup());
     }
 
     int SelectRoom(int minIndex = 0)

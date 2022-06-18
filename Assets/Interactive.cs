@@ -5,6 +5,8 @@ using UnityEngine.Events;
 
 public class Interactive : MonoBehaviour
 {
+    public string displayName = "";
+    public string terminalName = "";
     [System.Serializable]
     public class Option
     {
@@ -20,22 +22,12 @@ public class Interactive : MonoBehaviour
 
     public InteractControl interactor;
 
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public bool pointAtMe;
 
     public void CallPressFunctions()
     {
-        callOnPress.Invoke();
+        if(Input.GetButtonDown("Fire1"))
+            callOnPress.Invoke();
     }
 
     public void CallReleaseFunctions()

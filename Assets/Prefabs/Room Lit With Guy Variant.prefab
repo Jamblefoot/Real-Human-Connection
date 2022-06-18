@@ -616,6 +616,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 238118367889919082, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 95241f63e2b3c8143bcc8db8cf9761f2, type: 2}
     - target: {fileID: 1004950122032814400, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
       propertyPath: m_Name
       value: Room Lit With Guy Variant
@@ -628,6 +632,10 @@ PrefabInstance:
       propertyPath: m_RootOrder
       value: 12
       objectReference: {fileID: 0}
+    - target: {fileID: 2877946056478628248, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 95241f63e2b3c8143bcc8db8cf9761f2, type: 2}
     - target: {fileID: 3865153038967204781, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
       propertyPath: m_RootOrder
       value: 11
@@ -700,6 +708,10 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 8500217247726225241, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 95241f63e2b3c8143bcc8db8cf9761f2, type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4199ac1da238ee742aab172a762b737b, type: 3}
 --- !u!4 &5685785785719555788 stripped

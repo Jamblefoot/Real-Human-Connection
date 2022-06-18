@@ -9,17 +9,40 @@ public class InteractControl : MonoBehaviour
     [SerializeField] LineRenderer lineRend;
 
     [SerializeField] LayerMask interactLayers;
+    [SerializeField] Terminal terminal;
     [SerializeField] Text terminalText;
 
-    Interactive currentInteractive;
+    [SerializeField] TextMesh speechText;
+    bool talking;
+
+    public Interactive currentInteractive;
 
     public Vector3 interactPoint = Vector3.zero;
+
+    BlendshapeControl bsc;
+
+    bool checking;
+
+    public struct BodyPartParams
+    {
+        public int index;
+        public float value;
+    }
+    List<BodyPartParams> bodyPartData;
+
+    RoomControl roomControl;
     // Start is called before the first frame update
     void Start()
     {
 
         if(lineRend != null)
             lineRend.positionCount = 0;
+
+        speechText.text = "";
+
+        bsc = GetComponentInParent<BlendshapeControl>();
+
+        roomControl = FindObjectOfType<RoomControl>();
     }
 
     // Update is called once per frame
@@ -35,7 +58,7 @@ public class InteractControl : MonoBehaviour
                 Interactive interactive = hit.collider.GetComponent<Interactive>();
                 if(interactive != null)
                 {
-                    Debug.Log("Hitting interactive trigger for " + hit.collider.gameObject.name);
+                    //Debug.Log("Hitting interactive trigger for " + hit.collider.gameObject.name);
                     lineEnd = hit.point;
                     interactPoint = hit.point;
                     if(currentInteractive != interactive)
@@ -44,12 +67,15 @@ public class InteractControl : MonoBehaviour
                         interactive.interactor = this;
                         interactive.CallPressFunctions();
 
-                        if(interactive.options.Length > 0)
+                        if(interactive.options.Length > 0 && Input.GetButtonDown("Fire1"))
                         {
-                            for(int i = 0; i < interactive.options.Length; i++)
+                            if(!checking)
+                                StartCoroutine(CheckIfLike(interactive, interactive.GetComponentInParent<HumanAI>()));
+                            /*for(int i = 0; i < interactive.options.Length; i++)
                             {
                                 terminalText.text += "\n" + interactive.options[i].terminalName;
-                            }
+                                terminal.dataCount += 1;
+                            }*/
                         }
                     }
                 }
@@ -65,8 +91,11 @@ public class InteractControl : MonoBehaviour
                     
                 }
 
-                interactPoint = Vector3.zero;
+                interactPoint = transform.position + ray.direction * 1.5f;//Vector3.zero;
             }
+
+            if((interactPoint - transform.position).sqrMagnitude > 6)
+                interactPoint = transform.position + ray.direction * 1.5f;
 
             if(lineRend != null)
             {
@@ -92,5 +121,95 @@ public class InteractControl : MonoBehaviour
             interactPoint = Vector3.zero;
             
         }
+    }
+
+    public void Talk(string words)
+    {
+        if(!talking)
+            StartCoroutine(TalkCo(words));
+    }
+    IEnumerator TalkCo(string words)
+    {
+        talking = true;
+        bsc.talking = true;
+        speechText.text = words;
+        yield return new WaitForSeconds(words.Length);
+
+        talking = false;
+        bsc.talking = false;
+        speechText.text = "";
+
+    }
+
+    IEnumerator CheckIfLike(Interactive interactive, HumanAI ai)
+    {
+        checking = true;
+
+        ai.Say("Do you like my " + interactive.displayName);
+        ai.SetupReply("Yes", 5, interactive.terminalName + "++");
+        ai.SetupReply("No", 6, interactive.terminalName + "--");
+
+        if(interactive.options.Length > 0)
+        {
+            bodyPartData = new List<BodyPartParams>();
+            for(int i = 0; i < interactive.options.Length; i++)
+            {
+                BodyPartParams part = new BodyPartParams();
+                part.index = bsc.GetBlendShapeIndex(interactive.options[i].blendShapeName + " Max");
+                part.value = ai.GetBSC().GetBlendShapeWeight(part.index);
+                bodyPartData.Add(part);
+                BodyPartParams partMin = new BodyPartParams();
+                partMin.index = bsc.GetBlendShapeIndex(interactive.options[i].blendShapeName + " Min");
+                partMin.value = ai.GetBSC().GetBlendShapeWeight(partMin.index);
+                bodyPartData.Add(partMin);
+            }
+        }
+
+        yield return new WaitForSeconds(4f);
+
+        while(ai.IsTalking() && checking)
+        {
+            yield return null;
+        }
+
+        //terminalText.text += "\n" + interactive.terminalName;
+        //terminal.dataCount += 1;
+        checking = false;
+    }
+
+    public void WriteToTerminal(string words)
+    {
+        terminalText.text += "\n" + words;
+        terminal.dataCount += 1;
+    }
+
+    public void ApproveFeatures()
+    {
+        if(bodyPartData == null) return;
+
+        for(int i = 0; i < bodyPartData.Count; i++)
+        {
+            bsc.AdjustDesired(bodyPartData[i].index, bodyPartData[i].value, 1);
+        }
+        bodyPartData.Clear();
+
+        if(roomControl != null) roomControl.UpdateTerminal();
+    }
+    public void RejectFeatures()
+    {
+        if (bodyPartData == null) return;
+
+        for (int i = 0; i < bodyPartData.Count; i++)
+        {
+            bsc.AdjustDesired(bodyPartData[i].index, bodyPartData[i].value, -1);
+        }
+        bodyPartData.Clear();
+
+        if (roomControl != null) roomControl.UpdateTerminal();
+    }
+
+    public void ResetForNextRoom()
+    {
+        checking = false;
     }
 }
