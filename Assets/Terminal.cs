@@ -39,6 +39,12 @@ public class Terminal : MonoBehaviour
         result = character.CheckCompatibility(setup);
         if (bar != null)
             bar.localScale = new Vector3(result, 1, 1);
+
+        if(result > 0.9f && blinker != null)
+        {
+            blinker.Blink(1000000, 0.5f);
+        }
+
         return result;
     }
     

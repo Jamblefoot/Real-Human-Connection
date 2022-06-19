@@ -86,6 +86,8 @@ public class HumanAI : MonoBehaviour
 
         talking = false;
         speechText.text = "";
+        looking = false;
+        processing = false;
     }
     void OnDisable()
     {
@@ -219,6 +221,7 @@ public class HumanAI : MonoBehaviour
         talking = true;
         bsc.talking = true;
         speechText.text = words;
+        SoundLibrary.instance.SayWords(words);
         yield return new WaitForSeconds(words.Length);
 
         if(replyBoxes.Count > 0)

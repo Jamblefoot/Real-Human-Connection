@@ -47,6 +47,8 @@ public class ReplyControl : MonoBehaviour
                     interactCon.RejectFeatures();
                 else if(terminalString.Contains("+"))
                     interactCon.ApproveFeatures();
+
+                GameControl.instance.playerInteractions += 1;
             }
         }
     }

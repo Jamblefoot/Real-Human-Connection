@@ -145,9 +145,23 @@ public class InteractControl : MonoBehaviour
     {
         checking = true;
 
-        ai.Say("Do you like my " + interactive.displayName);
+        HumanAI.ReplySetup[] replies = new HumanAI.ReplySetup[2];
+        HumanAI.ReplySetup reply1 = new HumanAI.ReplySetup();
+        reply1.label = "Yes";
+        reply1.code = 5;
+        reply1.terminalLabel = interactive.terminalName + "++";
+        replies[0] = reply1;
+        HumanAI.ReplySetup reply2 = new HumanAI.ReplySetup();
+        reply2.label = "No";
+        reply2.code = 6; 
+        reply2.terminalLabel = interactive.terminalName + "--";
+        replies[1] = reply2;
+        ai.AddThingToSay("Do you like my " + interactive.displayName, replies);
+        /*ai.Say("Do you like my " + interactive.displayName);
         ai.SetupReply("Yes", 5, interactive.terminalName + "++");
         ai.SetupReply("No", 6, interactive.terminalName + "--");
+        HumanAI.ReplySetup[] replies = new HumanAI.ReplySetup[2];
+        ai.AddThingToSay("Do you like my " + interactive.displayName, replies);*/
 
         if(interactive.options.Length > 0)
         {

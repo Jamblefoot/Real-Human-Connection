@@ -9,6 +9,8 @@ public class GameControl : MonoBehaviour
 
     public bool inMenu = false;
 
+    public int playerInteractions;
+
     [SerializeField] Canvas menuCanvas;
     // Start is called before the first frame update
     void Start()

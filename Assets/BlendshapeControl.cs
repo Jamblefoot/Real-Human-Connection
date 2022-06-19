@@ -364,8 +364,12 @@ public class BlendshapeControl : MonoBehaviour
 
     void OnEnable()
     {
+        StopAllCoroutines();
         reachTarget = null;
         waving = false;
+        smiling = false;
+        frowning = false;
+        talking = false;
     }
 
     public void Smile()
@@ -432,7 +436,7 @@ public class BlendshapeControl : MonoBehaviour
         {
             delta += Mathf.Abs(desiredSetup[i] - suitorWeights[i]) / suitorWeights.Length;
         }
-        return delta / 100;
+        return 1 - delta / 100;
     }
 
     public float GetBlendShapeWeight(int index)
@@ -457,5 +461,55 @@ public class BlendshapeControl : MonoBehaviour
         {
             desiredSetup[index] = value;
         }
+    }
+
+    public void SetBlendShapesInRange(float[] desiredWeights, float range)
+    {
+        if (rend == null)
+            rend = GetComponentInChildren<SkinnedMeshRenderer>();
+
+
+        float rand = 0f;
+        for (int i = 0; i < rend.sharedMesh.blendShapeCount; i++)
+        {
+            rand = (Random.value - 0.5f) * range * 2;
+            float weight = Mathf.Clamp(desiredWeights[i] + rand, 0, 100);
+            rend.SetBlendShapeWeight(i, weight);
+            characterSetup[i] = weight;
+        }
+
+        if (Application.IsPlaying(gameObject))
+        {
+            leftEyeColor = new Color(Random.value, Random.value, Random.value);
+            materials[1].color = leftEyeColor;
+            rightEyeColor = new Color(Random.value, Random.value, Random.value);
+            materials[2].color = rightEyeColor;
+            skinColor = new Color(Random.value, Random.value, Random.value);
+            materials[0].color = skinColor;
+        }
+
+        /*characterSetup = new float[rend.sharedMesh.blendShapeCount];
+        for(int i = 0; i < characterSetup.Length; i++)
+        {
+            characterSetup[i] = rend.GetBlendShapeWeight(i);
+        }*/
+
+        if (cam != null)
+        {
+            cam.transform.localPosition = camPosInit + Vector3.forward * (rend.GetBlendShapeWeight(rend.sharedMesh.GetBlendShapeIndex("HeadSize Max")) / 100) * 0.5f;
+            cam.transform.localPosition -= Vector3.forward * (rend.GetBlendShapeWeight(rend.sharedMesh.GetBlendShapeIndex("HeadSize Min")) / 100) * 0.5f;
+        }
+
+        animator.SetFloat("cycleOffset", Random.value);
+        animator.SetFloat("speed", Random.Range(0.5f, 1.5f));
+    }
+
+    public float[] GetCharacterSetup()
+    {
+        return characterSetup;
+    }
+    public float[] GetDesiredSetup()
+    {
+        return desiredSetup;
     }
 }

@@ -15,6 +15,7 @@ public class RoomControl : MonoBehaviour
     AudioSource audioSource;
     [SerializeField] AudioClip kachunk;
     [SerializeField] Terminal playerTerminal;
+    //[SerializeField] GameObject terminalWinText;
 
     public class RoomSetup
     {
@@ -42,6 +43,8 @@ public class RoomControl : MonoBehaviour
     float compatibility;
 
     public UnityEvent callOnRoomChange;
+    public UnityEvent callOnWin;
+    bool winProcessed = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -93,6 +96,21 @@ public class RoomControl : MonoBehaviour
         
     }
 
+    void Update()
+    {
+        if (compatibility > 0.9f)
+        {
+            if (!winProcessed)
+            {
+                winProcessed = true;
+                callOnWin.Invoke();
+            }
+
+            //YOU WON
+            Debug.Log("You Won!");
+        }
+    }
+
     /*// Update is called once per frame
     void Update()
     {
@@ -112,6 +130,11 @@ public class RoomControl : MonoBehaviour
 
     public void MoveRandom()
     {
+        if (compatibility > 0.9f)
+        {
+            return;
+        }
+
         if(!moving)
             StartCoroutine(MoveCo(Random.Range(1, 6), Random.value > 0.5f, Random.value > 0.5f ? 1 : -1));
     }
@@ -158,7 +181,9 @@ public class RoomControl : MonoBehaviour
                     BlendshapeControl bsc = rooms[nextRoom].tran.GetComponentInChildren<BlendshapeControl>();
                     if(bsc != null)
                     {
-                        bsc.Randomize();
+                        if(counter > 1 || Random.value < 0.5f)
+                            bsc.Randomize();
+                        else bsc.SetBlendShapesInRange(player.GetDesiredSetup(), Mathf.Max(0, 100 - GameControl.instance.playerInteractions * 2));
                         bsc.target = player.head;
                     }
                 }
@@ -229,9 +254,12 @@ public class RoomControl : MonoBehaviour
             
                 window.material.SetFloat("_Glossiness", windowGloss);
 
-                if(counter == 1)
+                if(counter == 1 && audioSource != null)
                 {
-                    if(roomDist > 0.5f && audioSource != null)
+                    Vector3 localPos = rooms[nextRoom].tran.localPosition;
+                    float dist = Mathf.Max(Mathf.Abs(localPos.x), Mathf.Abs(localPos.y));
+                    //if(roomDist > 0.5f && audioSource != null)
+                    if(dist < 1.5f)
                     {
                         audioSource.Stop();
                         audioSource.PlayOneShot(kachunk);
